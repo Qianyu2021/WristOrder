@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WristOrder — Owner</title>
+  <link rel="stylesheet" href="/shared/style.css"><link rel="stylesheet" href="/owner/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+</head>
+<body><main>
+  <h1>WristOrder owner</h1><p>Your café at a glance · last 28 days</p>
+  <nav><a href="/cashier">Cashier</a><a href="/customer">Customer display</a><a href="/kitchen">Kitchen</a><a href="#popular">Popular items</a><a href="#inventory">Inventory &amp; reorder</a></nav>
+  <section id="restock-alert" class="panel restock-alert" role="status" aria-live="polite">Loading stock alerts…</section>
+  <section class="owner-overview">
+    <article id="popular" class="panel"><h2>Most popular items · last 7 days</h2><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Item</th><th>Sold</th><th>Revenue</th></tr></thead><tbody id="popular-items"><tr><td colspan="4">Loading sales…</td></tr></tbody></table></div></article>
+    <article id="inventory" class="panel"><h2>Inventory &amp; reorder</h2><p class="small">Available stock accounts for pending checkouts. Menu counts use base recipes; modifiers can change ingredient needs. Reorder when the available amount reaches the low mark. Use Receive when new stock arrives.</p><p id="stock-message" class="small" role="status"></p><h3>Menu items available to sell</h3><div class="table-wrap"><table><thead><tr><th>Menu item</th><th>Category</th><th>Can make</th><th>Status</th></tr></thead><tbody id="owner-menu-items"><tr><td colspan="4">Loading menu availability…</td></tr></tbody></table></div><h3>Food and ingredient stock</h3><div class="table-wrap"><table><thead><tr><th>Item or ingredient</th><th>Available</th><th>Status</th><th>On hand</th><th>Reserved</th><th>Low at</th><th>Order</th><th>Receive</th></tr></thead><tbody id="owner-inventory-items"><tr><td colspan="8">Loading inventory…</td></tr></tbody></table></div></article>
+  </section>
+  <section id="kpis" class="grid"></section>
+  <section class="grid"><article class="panel"><h2>Daily orders</h2><canvas id="daily-chart"></canvas></article><article class="panel"><h2>Top dishes this week</h2><canvas id="items-chart"></canvas></article></section>
+  <section class="panel"><h2>Ingredient usage and restock planning</h2><div class="table-wrap"><table><thead><tr><th>Ingredient</th><th>This week</th><th>Last week</th><th>Plan next week</th></tr></thead><tbody id="ingredients"></tbody></table></div></section>
+  <section class="grid"><article class="panel"><h2>Weekly report</h2><div class="buttons"><button class="primary" id="generate">Generate report</button><button id="send">Email report to owner</button></div><p id="report-status" class="small"></p><article id="report" class="small">Generate a report to see a concise owner briefing.</article></article><article class="panel"><h2>Ask WristOrder</h2><form id="ask-form"><input id="question" placeholder="What sold best this week?"><div class="buttons"><button class="primary">Ask</button><button type="button" id="ask-mic">🎙 Hold to ask</button></div></form><p id="answer" class="small">Ask about sales, popular dishes, or restocking.</p></article></section>
+</main><script type="module" src="/owner/app.js"></script></body>
+</html>

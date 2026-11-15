@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WristOrder · Cashier</title>
+<link rel="stylesheet" href="/cashier/style.css">
+</head>
+<body>
+<header>
+  <h1>WristOrder <span>Cashier</span></h1>
+  <nav class="quick-links" aria-label="Quick views"><a href="/customer/" target="_blank" rel="noopener">Customer order ↗</a><button id="showPopular" type="button">Popular items</button><button id="showInventory" type="button">Inventory</button><a href="/owner#inventory">Owner stock</a></nav>
+  <span id="micSource" class="mic" role="status">Vexo mic · disconnected</span>
+</header>
+<aside id="staffStockAlert" class="staff-stock-alert" role="status" aria-live="polite" hidden></aside>
+<div id="error" class="error" hidden role="alert"></div>
+<div id="readyNotice" class="ready-notice" hidden role="status" aria-live="polite"></div>
+<main>
+  <section class="left">
+    <div class="box vexo-controls">
+      <div class="head"><h2>Vexo band microphone</h2><button id="vexoConnect" type="button">Connect Vexo</button></div>
+      <p id="vexoStatus" role="status">Disconnected. Double-tap the band, then connect in Chrome.</p>
+      <button id="vexoStop" type="button" hidden>Stop band recording</button>
+      <p class="vexo-note"><strong>Conversation mode:</strong> tap the connected band to begin. For an order, say <strong>“stop listening”</strong> when it is complete. To add stock, say one item at a time, for example <strong>“received two bottles of milk”</strong> or <strong>“restock five croissants”</strong>, then say <strong>“stop listening”</strong>. The band reads the new amount back through the laptop. Hold to talk and typed commands also work.</p>
+      <label class="mic">Laptop mic fallback <select id="mic"><option value="">Default microphone</option></select></label>
+    </div>
+    <button id="ptt" class="ptt" type="button">Hold to talk <small>laptop mic fallback · or hold Space</small></button>
+    <div class="meter"><div id="level"></div></div>
+    <form id="textForm" class="row">
+      <input id="text" type="text" placeholder="Type an order, e.g. two lattes and a croissant" autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+    <div class="box"><h2>Heard</h2><p id="heard" class="big">—</p></div>
+    <div class="box"><h2>Conversation transcript</h2><p id="conversation" class="big">—</p></div>
+    <div class="box"><h2>Readback</h2><p id="readback" class="big">—</p></div>
+  </section>
+  <section class="right">
+    <div class="box">
+      <div class="head"><h2>Order</h2><span id="status" class="badge building">building</span></div>
+      <div id="lines" class="lines"></div>
+      <div class="total"><span>Total</span><span id="total">$0.00</span></div>
+    </div>
+    <div id="receipt" class="box receipt" hidden>
+      <div class="head"><h2>Receipt</h2><button id="printReceipt" type="button">Print</button></div>
+      <p id="receiptNumber" class="small"></p>
+      <div id="receiptLines" class="lines"></div>
+      <div class="total"><span>Total</span><span id="receiptTotal">$0.00</span></div>
+    </div>
+    <div id="payment" class="box payment" hidden>
+      <h2>Customer payment</h2>
+      <img id="paymentQr" class="payment-qr" alt="QR code for customer payment">
+      <p>Ask the customer to scan this code to pay.</p>
+      <div class="payment-actions">
+        <a id="paymentLink" target="_blank" rel="noopener">Open payment page</a>
+        <a href="/customer" target="_blank" rel="noopener">Open customer display</a>
+      </div>
+    </div>
+    <div class="row buttons">
+      <button id="confirm" class="primary" type="button">Confirm</button>
+      <button id="clear" type="button">Clear</button>
+      <button id="cancel" class="danger" type="button">Cancel order</button>
+      <button id="new" type="button">New order</button>
+      <button id="pay" type="button" hidden>Simulate payment</button>
+    </div>
+  </section>
+</main>
+<section id="menu" class="menu box" aria-label="Menu">
+  <div class="head menu-head"><h2>Items</h2><div class="menu-tabs" role="tablist" aria-label="Item lists"><button id="menuTab" class="menu-tab active" type="button" role="tab" aria-selected="true" aria-controls="menuItems">Menu</button><button id="popularTab" class="menu-tab" type="button" role="tab" aria-selected="false" aria-controls="popularItems">Popular items</button><button id="inventoryTab" class="menu-tab" type="button" role="tab" aria-selected="false" aria-controls="inventoryItems">Inventory</button></div></div>
+  <div id="menuItems" class="menu-items" role="tabpanel" aria-labelledby="menuTab"></div>
+  <div id="popularItems" class="popular-items" role="tabpanel" aria-labelledby="popularTab" hidden></div>
+  <div id="inventoryItems" class="inventory-items" role="tabpanel" aria-labelledby="inventoryTab" hidden></div>
+</section>
+<script type="module" src="/cashier/app.js"></script>
+</body>
+</html>

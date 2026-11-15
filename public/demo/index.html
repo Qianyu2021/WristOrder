@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b19">
+  <title>WristOrder — Live café</title>
+  <link rel="stylesheet" href="/demo/style.css">
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="WristOrder home"><span class="brand-mark" aria-hidden="true">W</span>WristOrder<span class="brand-caption">THE CAFÉ, CONNECTED.</span></a>
+      <div class="header-actions"><span id="connection" class="connection">Connecting</span><button id="fullscreen" type="button">Full screen</button><a class="customer-order-link" href="/customer/" target="_blank" rel="noopener">Open customer order ↗</a><a href="/cashier" target="_blank" rel="noopener">Open register ↗</a><a class="inventory-link" href="/owner/#inventory" target="_blank" rel="noopener">Inventory ↗</a></div>
+    </header>
+    <section class="intro"><div><p class="eyebrow">FROM YOUR WRIST TO THE KITCHEN</p><h1>Great service. In motion.</h1></div><p class="intro-copy">One conversation.<br>A whole café working together.</p></section>
+    <ol class="journey" aria-label="Current order progress">
+      <li id="step-order"><span class="step-number">01</span><span>Take the order</span><span class="step-detail" id="order-progress">Waiting</span></li>
+      <li id="step-pay"><span class="step-number">02</span><span>Scan &amp; pay</span><span class="step-detail" id="pay-progress">Waiting</span></li>
+      <li id="step-kitchen"><span class="step-number">03</span><span>Made with care</span><span class="step-detail" id="kitchen-progress">Waiting</span></li>
+    </ol>
+    <div class="dashboard">
+      <section class="panel order-panel" aria-labelledby="order-title"><div class="panel-heading"><div><p class="eyebrow">THE CONVERSATION BECOMES</p><h2 id="order-title">Your order</h2></div><span id="order-status" class="badge">Waiting</span></div><p id="order-id" class="order-id">No order loaded</p><div id="order-lines" class="order-lines"><p class="empty">Start an order from the wristband or register.</p></div><div class="order-total"><span>Total</span><strong id="order-total">—</strong></div><div class="heard"><span>LAST HEARD</span><p id="heard">Your conversation will appear here.</p></div></section>
+      <section class="panel payment-panel" aria-labelledby="payment-title"><div class="panel-heading"><div><p class="eyebrow">A SIMPLE FINISH</p><h2 id="payment-title">Scan. Pay. Enjoy.</h2></div></div><div id="payment-content" class="payment-content"><span class="payment-symbol" aria-hidden="true">↗</span><h3>Ready when you are.</h3><p>The payment code appears when the order is confirmed.</p></div><p id="payment-mode" class="panel-note">Checking payment mode…</p></section>
+      <section class="panel kitchen-panel" aria-labelledby="kitchen-title"><div class="panel-heading"><div><p class="eyebrow">BEHIND THE COUNTER</p><h2 id="kitchen-title">Kitchen live</h2></div><span id="kitchen-count" class="badge">—</span></div><div id="tickets" class="tickets"><p class="empty">Paid orders arrive here automatically.</p></div><a class="panel-link" href="/kitchen" target="_blank" rel="noopener">Open kitchen ↗</a></section>
+      <section class="sales-panel" aria-labelledby="sales-title"><div class="sales-heading"><span class="spark" aria-hidden="true">✳</span><div><p class="eyebrow">EVERY ORDER COUNTS</p><h2 id="sales-title">Today’s café</h2><p id="sales-date">UTC reporting day</p></div></div><div class="metric"><strong id="sales-revenue">—</strong><span>Paid sales</span></div><div class="metric"><strong id="sales-orders">—</strong><span>Paid orders</span></div><p id="sales-note" class="sales-note">Loading saved sales…</p></section>
+    </div>
+    <footer><div id="services" class="services" aria-label="Integration modes">Checking integrations…</div><p id="sync-status" role="status">Connecting to the café…</p><a href="/owner" target="_blank" rel="noopener">Owner insights ↗</a></footer>
+  </main>
+  <script type="module" src="/demo/app.js"></script>
+</body>
+</html>

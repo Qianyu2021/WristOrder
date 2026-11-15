@@ -1,0 +1,19 @@
+:root{color-scheme:dark;--bg:#0b0e12;--panel:#161b22;--line:#2b333d;--fg:#fff;--muted:#a9b3bf;--green:#3ddc84;--accent:#ffb454}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:22px/1.4 system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:baseline;padding:20px 28px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:2rem;color:var(--accent)}h1 span{color:var(--fg);font-weight:400}h2{padding:0 28px;color:var(--muted)}
+#count{color:var(--muted)}
+.staff-stock-alert{margin:16px 28px;padding:14px 18px;border:1px solid var(--accent);border-radius:12px;background:#382917;color:#fff;font-size:1rem}.staff-stock-alert[hidden]{display:none}.staff-stock-alert ul{display:flex;flex-wrap:wrap;gap:6px 24px;margin:8px 0;padding-left:22px}.staff-stock-alert a{color:#ffe0a3}
+main,#done{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;padding:24px 28px}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:60px}
+.ticket{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:18px 20px;transition:opacity .3s}
+.ticket .head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ticket .id{font-weight:800;font-size:1.5rem;color:var(--accent)}.ticket .time{color:var(--muted);font-size:.9rem}
+.ticket ul{list-style:none;margin:0;padding:0}.ticket li{padding:4px 0;font-size:1.3rem}
+.ticket.flash{animation:flash 2.4s ease-out}
+.ticket.done{border-color:#285840}.ticket.done .id{color:var(--green)}
+.ticket button{display:block;width:100%;margin-top:18px;border:0;border-radius:10px;padding:13px;background:var(--green);color:#062313;font:700 1rem system-ui;cursor:pointer}.ticket button:disabled{opacity:.6;cursor:default}.ticket.done button{background:#203c2d;color:var(--green);opacity:1}
+.summary{text-align:right;font-size:.95rem}.summary a{color:var(--muted)}#connection{font-size:.85rem;color:var(--green)}#error{margin:20px 28px;padding:14px;border:1px solid #9d4141;border-radius:12px;background:#381d22;color:#ffb6b6}
+@media(max-width:600px){header{display:block;padding:18px}.summary{text-align:left;margin-top:10px}main,#done{padding:18px;grid-template-columns:1fr}h1{font-size:1.6rem}}
+@keyframes flash{0%,40%{background:#1f5f3c;border-color:var(--green);transform:scale(1.03)}100%{background:var(--panel);border-color:var(--line);transform:none}}
+@media(prefers-reduced-motion:reduce){.ticket.flash{animation:none;border-color:var(--green)}}

@@ -1,0 +1,29 @@
+{
+  "currency": "usd",
+  "items": [
+    {"id":"latte","name":"Latte","aliases":["cafe latte"],"category":"drinks","price_cents":450,"modifiers":["size_large","size_small","oat_milk","extra_shot","decaf","no_ice"],"ingredients":{"espresso_g":18,"milk_ml":200,"cup":1}},
+    {"id":"cappuccino","name":"Cappuccino","aliases":[],"category":"drinks","price_cents":425,"modifiers":["size_large","size_small","oat_milk","extra_shot","decaf"],"ingredients":{"espresso_g":18,"milk_ml":140,"cup":1}},
+    {"id":"americano","name":"Americano","aliases":["american coffee"],"category":"drinks","price_cents":350,"modifiers":["size_large","size_small","extra_shot","decaf"],"ingredients":{"espresso_g":18,"water_ml":240,"cup":1}},
+    {"id":"espresso","name":"Espresso","aliases":["a shot"],"category":"drinks","price_cents":275,"modifiers":["extra_shot","decaf"],"ingredients":{"espresso_g":18,"cup":1}},
+    {"id":"chai_latte","name":"Chai Latte","aliases":["chai"],"category":"drinks","price_cents":475,"modifiers":["size_large","size_small","oat_milk","no_ice"],"ingredients":{"chai_ml":180,"milk_ml":100,"cup":1}},
+    {"id":"matcha_latte","name":"Matcha Latte","aliases":["matcha"],"category":"drinks","price_cents":500,"modifiers":["size_large","size_small","oat_milk","no_ice"],"ingredients":{"matcha_g":3,"milk_ml":200,"cup":1}},
+    {"id":"iced_tea","name":"Iced Tea","aliases":["tea"],"category":"drinks","price_cents":325,"modifiers":["size_large","size_small","no_ice"],"ingredients":{"tea_g":4,"water_ml":300,"cup":1}},
+    {"id":"mocha","name":"Mocha","aliases":[],"category":"drinks","price_cents":525,"modifiers":["size_large","size_small","oat_milk","extra_shot","decaf"],"ingredients":{"espresso_g":18,"milk_ml":190,"chocolate_g":20,"cup":1}},
+    {"id":"hot_chocolate","name":"Hot Chocolate","aliases":["cocoa"],"category":"drinks","price_cents":400,"modifiers":["size_large","size_small","oat_milk","warmed"],"ingredients":{"milk_ml":220,"chocolate_g":25,"cup":1}},
+    {"id":"croissant","name":"Croissant","aliases":["plain croissant"],"category":"pastries","price_cents":325,"modifiers":["warmed"],"ingredients":{"croissant":1}},
+    {"id":"blueberry_muffin","name":"Blueberry Muffin","aliases":["muffin"],"category":"pastries","price_cents":350,"modifiers":["warmed"],"ingredients":{"blueberry_muffin":1}},
+    {"id":"banana_bread","name":"Banana Bread","aliases":[],"category":"pastries","price_cents":375,"modifiers":["warmed"],"ingredients":{"banana_bread":1}},
+    {"id":"ham_cheese_sandwich","name":"Ham & Cheese Sandwich","aliases":["ham and cheese sandwich"],"category":"food","price_cents":825,"modifiers":["warmed"],"ingredients":{"bread_slice":2,"ham_g":70,"cheese_g":30}},
+    {"id":"avocado_toast","name":"Avocado Toast","aliases":[],"category":"food","price_cents":750,"modifiers":["warmed"],"ingredients":{"bread_slice":2,"avocado_g":80}}
+  ],
+  "modifiers": [
+    {"id":"size_large","name":"Large","price_cents":75,"ingredients":{"milk_ml":80}},
+    {"id":"size_small","name":"Small","price_cents":-50,"ingredients":{}},
+    {"id":"oat_milk","name":"Oat milk","price_cents":50,"ingredients":{"milk_ml":-200,"oat_milk_ml":200}},
+    {"id":"extra_shot","name":"Extra shot","price_cents":100,"ingredients":{"espresso_g":18}},
+    {"id":"decaf","name":"Decaf","price_cents":0,"ingredients":{}},
+    {"id":"warmed","name":"Warmed","price_cents":0,"ingredients":{}},
+    {"id":"no_ice","name":"No ice","price_cents":0,"ingredients":{}}
+  ],
+  "ingredient_units": {"espresso_g":"g","milk_ml":"ml","oat_milk_ml":"ml","water_ml":"ml","chai_ml":"ml","matcha_g":"g","tea_g":"g","chocolate_g":"g","cup":"pcs","croissant":"pcs","blueberry_muffin":"pcs","banana_bread":"pcs","bread_slice":"slices","ham_g":"g","cheese_g":"g","avocado_g":"g"}
+}

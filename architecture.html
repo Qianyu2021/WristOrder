@@ -1,0 +1,376 @@
+<title>WristOrder Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one reading column; full-width diagram, then the agent plan as a timeline + cards. Colors encode workstream ownership. */
+:root {
+  --bg: #f5f7f9; --panel: #ffffff; --fg: #17202b; --muted: #5b6675; --border: #d7dce3; --line: #7b8594;
+  --ws0: #4a5a70; --ws0-bg: #e8edf3;
+  --ws1: #0f8a7e; --ws1-bg: #def2ef;
+  --ws2: #2f5bd3; --ws2-bg: #e4ebfc;
+  --ws3: #ad7016; --ws3-bg: #fbf0dc;
+  --ws4: #3b8638; --ws4-bg: #e4f1e1;
+  --ws5: #c2416b; --ws5-bg: #fbe5ec;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141a; --panel: #161d25; --fg: #e6ebf1; --muted: #98a3b1; --border: #2a3440; --line: #7d8896;
+  --ws0: #a3b3c8; --ws0-bg: #1f2a36; --ws1: #4cc7b8; --ws1-bg: #11302c; --ws2: #86a3f6; --ws2-bg: #182340;
+  --ws3: #e6ad4c; --ws3-bg: #33270f; --ws4: #7cc47a; --ws4-bg: #182d18; --ws5: #ef82a3; --ws5-bg: #3a1824;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f141a; --panel: #161d25; --fg: #e6ebf1; --muted: #98a3b1; --border: #2a3440; --line: #7d8896;
+  --ws0: #a3b3c8; --ws0-bg: #1f2a36; --ws1: #4cc7b8; --ws1-bg: #11302c; --ws2: #86a3f6; --ws2-bg: #182340;
+  --ws3: #e6ad4c; --ws3-bg: #33270f; --ws4: #7cc47a; --ws4-bg: #182d18; --ws5: #ef82a3; --ws5-bg: #3a1824;
+  color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 2.1rem; font-weight: 700; }
+h2 { font-size: 1.4rem; font-weight: 600; }
+h3 { font-size: 1.02rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+.muted { color: var(--muted); }
+section { display: grid; gap: 18px; min-width: 0; }
+.eyebrow { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+header { display: grid; gap: 14px; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; }
+.fact { border: 1px solid var(--border); background: var(--panel); border-radius: 999px; padding: 6px 14px; font-size: 0.9rem; }
+.fact b { font-family: var(--display); font-size: 1.05rem; margin-right: 4px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+.sw.ws0 { background: var(--ws0-bg); border-color: var(--ws0); }
+.sw.ws1 { background: var(--ws1-bg); border-color: var(--ws1); }
+.sw.ws2 { background: var(--ws2-bg); border-color: var(--ws2); }
+.sw.ws3 { background: var(--ws3-bg); border-color: var(--ws3); }
+.sw.ws4 { background: var(--ws4-bg); border-color: var(--ws4); }
+.sw.ws5 { background: var(--ws5-bg); border-color: var(--ws5); }
+.sw.ext { background: var(--panel); border-color: var(--line); border-style: dashed; }
+
+.diagram { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+.diagram svg { display: block; width: 100%; min-width: 920px; height: auto; }
+svg .b rect { stroke-width: 1.5; }
+svg .ws0 rect { fill: var(--ws0-bg); stroke: var(--ws0); }
+svg .ws1 rect { fill: var(--ws1-bg); stroke: var(--ws1); }
+svg .ws2 rect { fill: var(--ws2-bg); stroke: var(--ws2); }
+svg .ws3 rect { fill: var(--ws3-bg); stroke: var(--ws3); }
+svg .ws4 rect { fill: var(--ws4-bg); stroke: var(--ws4); }
+svg .ws5 rect { fill: var(--ws5-bg); stroke: var(--ws5); }
+svg .ext rect { fill: var(--panel); stroke: var(--line); stroke-dasharray: 5 4; }
+svg .t { font: 600 12.5px var(--mono); fill: var(--fg); text-anchor: middle; }
+svg .s { font: 11px var(--sans); fill: var(--muted); text-anchor: middle; }
+svg .server { fill: var(--bg); stroke: var(--border); stroke-width: 1.5; }
+svg .coreband { fill: var(--ws0-bg); opacity: 0.55; }
+svg .cap { font: 600 10.5px var(--sans); letter-spacing: 0.08em; fill: var(--muted); }
+svg .title { font: 600 14px var(--display); fill: var(--fg); }
+svg .a { fill: none; stroke: var(--line); stroke-width: 1.5; }
+svg .a.dash { stroke-dasharray: 5 4; }
+svg .a.pay { stroke: var(--ws2); stroke-dasharray: 6 4; }
+svg .ahp { fill: var(--line); }
+svg .ahpay { fill: var(--ws2); }
+svg .lbl { font: 10.5px var(--sans); fill: var(--muted); }
+svg .lbl.pay { fill: var(--ws2); font-weight: 600; }
+
+ol.flow { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; counter-reset: step; }
+ol.flow li { counter-increment: step; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+ol.flow li::before { content: counter(step); font: 600 0.8rem var(--display); color: var(--muted); }
+ol.flow li b { font-weight: 600; }
+ol.flow li span { color: var(--muted); font-size: 0.9rem; }
+
+.gantt { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; }
+.gantt-inner { min-width: 640px; display: grid; gap: 8px; }
+.grow { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 12px; }
+.grow .who { font-weight: 600; font-size: 0.9rem; }
+.grow .who small { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; }
+.track { position: relative; height: 34px; border-radius: 6px;
+  background: repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 1px), var(--border) calc(10% - 1px), var(--border) 10%); }
+.bar { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; border: 1.5px solid; font-size: 0.76rem; font-weight: 600; padding: 0 8px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; }
+.bar.ws0 { background: var(--ws0-bg); border-color: var(--ws0); color: var(--fg); }
+.bar.ws1 { background: var(--ws1-bg); border-color: var(--ws1); color: var(--fg); }
+.bar.ws2 { background: var(--ws2-bg); border-color: var(--ws2); color: var(--fg); }
+.bar.ws3 { background: var(--ws3-bg); border-color: var(--ws3); color: var(--fg); }
+.bar.ws4 { background: var(--ws4-bg); border-color: var(--ws4); color: var(--fg); }
+.bar.ws5 { background: var(--ws5-bg); border-color: var(--ws5); color: var(--fg); }
+.axis { display: grid; grid-template-columns: 170px 1fr; gap: 12px; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.axis .ticks { display: flex; justify-content: space-between; }
+.phase-note { font-size: 0.85rem; color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; border-top: 4px solid var(--c); }
+.card.ws0 { --c: var(--ws0); } .card.ws1 { --c: var(--ws1); } .card.ws2 { --c: var(--ws2); }
+.card.ws3 { --c: var(--ws3); } .card.ws4 { --c: var(--ws4); } .card.ws5 { --c: var(--ws5); }
+.card .tag { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c); }
+.card dl { margin: 0; display: grid; gap: 8px; }
+.card dt { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.card dd { margin: 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1.5px solid; white-space: nowrap; }
+.pill.ws0 { border-color: var(--ws0); background: var(--ws0-bg); } .pill.ws1 { border-color: var(--ws1); background: var(--ws1-bg); }
+.pill.ws2 { border-color: var(--ws2); background: var(--ws2-bg); } .pill.ws3 { border-color: var(--ws3); background: var(--ws3-bg); }
+.pill.ws4 { border-color: var(--ws4); background: var(--ws4-bg); }
+
+@media (max-width: 560px) {
+  h1 { font-size: 1.7rem; }
+  .grow, .axis { grid-template-columns: 120px 1fr; }
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Hackathon build · 5 hours · solo</div>
+  <h1>WristOrder architecture</h1>
+  <p class="muted">The cashier speaks to a Vexo bracelet, Gemini turns speech into an order, the customer pays by scanning a Stripe QR code, and every paid order feeds the owner's dashboard and weekly restock report.</p>
+  <div class="facts">
+    <span class="fact"><b>5</b>AI agents</span>
+    <span class="fact"><b>4</b>run in parallel</span>
+    <span class="fact"><b>1</b>human (you, on the bracelet)</span>
+    <span class="fact"><b>4</b>external services</span>
+  </div>
+</header>
+
+<section>
+  <h2>System map</h2>
+  <p class="muted">Box color shows which agent builds it. Dashed boxes are outside services.</p>
+  <div class="legend">
+    <span><i class="sw ws0"></i>Lead agent · WS0 core</span>
+    <span><i class="sw ws1"></i>Agent 1 · Voice</span>
+    <span><i class="sw ws2"></i>Agent 2 · Payments</span>
+    <span><i class="sw ws3"></i>Agent 3 · Screens</span>
+    <span><i class="sw ws4"></i>Agent 4 · Owner &amp; data</span>
+    <span><i class="sw ws5"></i>You · Vexo bracelet</span>
+    <span><i class="sw ext"></i>External service</span>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 1120 648" role="img" aria-label="WristOrder system architecture diagram">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" class="ahp"/></marker>
+        <marker id="ahpay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" class="ahpay"/></marker>
+      </defs>
+
+      <!-- column captions -->
+      <text x="20" y="20" class="cap">IN THE CAFÉ</text>
+      <text x="880" y="20" class="cap">EXTERNAL SERVICES</text>
+
+      <!-- server -->
+      <rect x="300" y="12" width="520" height="606" rx="14" class="server"/>
+      <text x="320" y="40" class="title">Node + Express server</text>
+      <rect x="310" y="300" width="500" height="84" rx="10" class="coreband"/>
+      <text x="320" y="64" class="cap">VOICE → ORDER</text>
+      <text x="320" y="184" class="cap">PAYMENT</text>
+      <text x="320" y="316" class="cap">CORE · SHARED BY EVERY MODULE</text>
+      <text x="320" y="444" class="cap">DATA + OWNER</text>
+
+      <!-- devices -->
+      <g class="b ws5"><rect x="20" y="30" width="200" height="56" rx="10"/><text x="120" y="54" class="t">Vexo bracelet</text><text x="120" y="72" class="s">cashier speaks the order</text></g>
+      <g class="b ws3"><rect x="20" y="110" width="200" height="56" rx="10"/><text x="120" y="134" class="t">Cashier screen</text><text x="120" y="152" class="s">/cashier · push-to-talk</text></g>
+      <g class="b ws3"><rect x="20" y="210" width="200" height="56" rx="10"/><text x="120" y="234" class="t">Customer screen</text><text x="120" y="252" class="s">/customer · order + QR</text></g>
+      <g class="b ext"><rect x="20" y="300" width="200" height="56" rx="10"/><text x="120" y="324" class="t">Customer's phone</text><text x="120" y="342" class="s">scans QR, pays</text></g>
+      <g class="b ws3"><rect x="20" y="390" width="200" height="56" rx="10"/><text x="120" y="414" class="t">Kitchen screen</text><text x="120" y="432" class="s">/kitchen · paid tickets</text></g>
+      <g class="b ws4"><rect x="20" y="500" width="200" height="56" rx="10"/><text x="120" y="524" class="t">Owner dashboard</text><text x="120" y="542" class="s">/owner · stats + ask</text></g>
+
+      <!-- row 1: voice -->
+      <g class="b ws1"><rect x="320" y="70" width="150" height="50" rx="8"/><text x="395" y="91" class="t">/api/voice</text><text x="395" y="108" class="s">routes/voice.js</text></g>
+      <g class="b ws1"><rect x="490" y="70" width="150" height="50" rx="8"/><text x="565" y="91" class="t">speech.js</text><text x="565" y="108" class="s">hear + speak</text></g>
+      <g class="b ws1"><rect x="660" y="70" width="150" height="50" rx="8"/><text x="735" y="91" class="t">gemini.js</text><text x="735" y="108" class="s">text → tool calls</text></g>
+
+      <!-- row 2: payment -->
+      <g class="b ws2"><rect x="320" y="190" width="150" height="50" rx="8"/><text x="395" y="211" class="t">/api/checkout</text><text x="395" y="228" class="s">routes/payment.js</text></g>
+      <g class="b ws2"><rect x="490" y="190" width="150" height="50" rx="8"/><text x="565" y="211" class="t">startCheckout()</text><text x="565" y="228" class="s">QR code + lock order</text></g>
+      <g class="b ws2"><rect x="660" y="190" width="150" height="50" rx="8"/><text x="735" y="211" class="t">stripe.js</text><text x="735" y="228" class="s">Checkout · poll every 2s</text></g>
+
+      <!-- row 3: core -->
+      <g class="b ws0"><rect x="320" y="320" width="150" height="50" rx="8"/><text x="395" y="341" class="t">events.js</text><text x="395" y="358" class="s">live updates (SSE)</text></g>
+      <g class="b ws0"><rect x="490" y="320" width="150" height="50" rx="8"/><text x="565" y="341" class="t">order.js</text><text x="565" y="358" class="s">the active order</text></g>
+      <g class="b ws0"><rect x="660" y="320" width="150" height="50" rx="8"/><text x="735" y="341" class="t">menu.js</text><text x="735" y="358" class="s">prices + recipes</text></g>
+
+      <!-- row 4/5: owner + data -->
+      <g class="b ws4"><rect x="320" y="450" width="150" height="50" rx="8"/><text x="395" y="471" class="t">/api/owner</text><text x="395" y="488" class="s">routes/owner.js</text></g>
+      <g class="b ws4"><rect x="490" y="450" width="150" height="50" rx="8"/><text x="565" y="471" class="t">stats · report</text><text x="565" y="488" class="s">numbers + AI summary</text></g>
+      <g class="b ws4"><rect x="660" y="450" width="150" height="50" rx="8"/><text x="735" y="471" class="t">email.js</text><text x="735" y="488" class="s">weekly report</text></g>
+      <g class="b ws4"><rect x="320" y="530" width="150" height="50" rx="8"/><text x="395" y="551" class="t">seed.js</text><text x="395" y="568" class="s">4 weeks of sample orders</text></g>
+      <g class="b ws4"><rect x="490" y="530" width="150" height="50" rx="8"/><text x="565" y="551" class="t">db.js · SQLite</text><text x="565" y="568" class="s">orders + items</text></g>
+      <g class="b ws4"><rect x="660" y="530" width="150" height="50" rx="8"/><text x="735" y="551" class="t">node-cron</text><text x="735" y="568" class="s">Mondays 8:00</text></g>
+
+      <!-- externals -->
+      <g class="b ext"><rect x="880" y="30" width="210" height="56" rx="10"/><text x="985" y="54" class="t">Deepgram</text><text x="985" y="72" class="s">speech-to-text + Aura voice</text></g>
+      <g class="b ext"><rect x="880" y="100" width="210" height="56" rx="10"/><text x="985" y="124" class="t">Google Gemini</text><text x="985" y="142" class="s">order parsing + summaries</text></g>
+      <g class="b ext"><rect x="880" y="187" width="210" height="56" rx="10"/><text x="985" y="211" class="t">Stripe</text><text x="985" y="229" class="s">hosted Checkout page</text></g>
+      <g class="b ext"><rect x="880" y="447" width="210" height="56" rx="10"/><text x="985" y="471" class="t">Resend</text><text x="985" y="489" class="s">email to the owner</text></g>
+
+      <!-- arrows: devices -->
+      <path d="M120 86 V108" class="a" marker-end="url(#ah)"/>
+      <text x="128" y="101" class="lbl">audio</text>
+      <path d="M220 130 H262 V95 H318" class="a" marker-end="url(#ah)"/>
+      <text x="236" y="124" class="lbl" text-anchor="middle">clip</text>
+      <path d="M120 266 V298" class="a" marker-end="url(#ah)"/>
+      <text x="128" y="287" class="lbl">scan QR</text>
+
+      <!-- SSE fan-out -->
+      <path d="M320 345 H280" class="a"/>
+      <path d="M280 150 V418" class="a"/>
+      <path d="M280 150 H222" class="a" marker-end="url(#ah)"/>
+      <path d="M280 238 H222" class="a" marker-end="url(#ah)"/>
+      <path d="M280 418 H222" class="a" marker-end="url(#ah)"/>
+      <text transform="translate(293 330) rotate(-90)" class="lbl" text-anchor="middle">live updates</text>
+
+      <!-- owner -->
+      <path d="M220 528 H262 V475 H318" class="a" marker-end="url(#ah)"/>
+      <text x="241" y="522" class="lbl" text-anchor="middle">HTTP</text>
+
+      <!-- voice row -->
+      <path d="M470 95 H488" class="a" marker-end="url(#ah)"/>
+      <path d="M640 95 H658" class="a" marker-end="url(#ah)"/>
+      <path d="M565 70 V58 H878" class="a" marker-end="url(#ah)"/>
+      <text x="760" y="52" class="lbl" text-anchor="middle">audio → text · text → voice</text>
+      <path d="M810 95 H845 V118 H878" class="a" marker-end="url(#ah)"/>
+      <path d="M395 120 V155 H545 V188" class="a" marker-end="url(#ah)"/>
+      <text x="470" y="150" class="lbl" text-anchor="middle">"confirm"</text>
+
+      <!-- payment row -->
+      <path d="M470 215 H488" class="a" marker-end="url(#ah)"/>
+      <path d="M640 215 H658" class="a" marker-end="url(#ah)"/>
+      <path d="M810 215 H878" class="a" marker-end="url(#ah)"/>
+      <path d="M810 228 H834 V600 H565 V582" class="a" marker-end="url(#ah)"/>
+      <text x="700" y="595" class="lbl" text-anchor="middle">paid → save order</text>
+
+      <!-- owner rows -->
+      <path d="M470 475 H488" class="a" marker-end="url(#ah)"/>
+      <path d="M640 475 H658" class="a" marker-end="url(#ah)"/>
+      <path d="M810 475 H878" class="a" marker-end="url(#ah)"/>
+      <path d="M565 500 V528" class="a" marker-end="url(#ah)" marker-start="url(#ah)"/>
+      <path d="M470 555 H488" class="a" marker-end="url(#ah)"/>
+      <path d="M735 530 V502" class="a" marker-end="url(#ah)"/>
+      <text x="741" y="520" class="lbl">weekly</text>
+      <path d="M600 450 V432 H856 V142 H878" class="a dash" marker-end="url(#ah)"/>
+      <text x="700" y="426" class="lbl" text-anchor="middle">owner Q&amp;A + report summary</text>
+
+      <!-- customer pays -->
+      <path d="M20 328 H8 V636 H1108 V215 H1092" class="a pay" marker-end="url(#ahpay)"/>
+      <text x="560" y="631" class="lbl pay" text-anchor="middle">customer pays on their own phone with Stripe Checkout</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <h2>One order, start to finish</h2>
+  <ol class="flow">
+    <li><b>Cashier speaks</b><span>Holds the bracelet button: "Two large oat lattes and a croissant."</span></li>
+    <li><b>Deepgram hears, Gemini parses</b><span>Deepgram turns the clip into text, primed with menu names. Gemini turns the text into tool calls like <code>add_item</code>.</span></li>
+    <li><b>Order updates live</b><span><code>order.js</code> changes and the customer screen updates over SSE.</span></li>
+    <li><b>Read-back</b><span>A Deepgram Aura voice speaks the order and total. The cashier can edit by voice.</span></li>
+    <li><b>"Confirm"</b><span>A Stripe Checkout session is created and its QR code appears on the customer screen.</span></li>
+    <li><b>Customer pays</b><span>They scan and pay on their phone. The server sees it paid within about 2 seconds.</span></li>
+    <li><b>Ticket + record</b><span>The kitchen screen gets a ticket and the order is saved to SQLite for the owner's stats.</span></li>
+  </ol>
+</section>
+
+<section>
+  <h2>The agents and when they run</h2>
+  <p>The lead agent (your main Claude Code session) builds the shared core first. Four builder agents then work in parallel, each in its own files. The lead connects everything at the end. You handle the bracelet, API keys and rehearsal.</p>
+  <div class="gantt">
+    <div class="gantt-inner">
+      <div class="axis"><span></span><div class="ticks"><span>0:00</span><span>1:00</span><span>2:00</span><span>3:00</span><span>4:00</span><span>5:00</span></div></div>
+      <div class="grow"><div class="who">Lead agent<small>main session</small></div><div class="track">
+        <div class="bar ws0" style="left:0;width:10%">WS0 core</div>
+        <div class="bar ws0" style="left:70%;width:15%">WS6 integrate</div>
+      </div></div>
+      <div class="grow"><div class="who">Agent 1<small>Voice</small></div><div class="track"><div class="bar ws1" style="left:10%;width:60%">WS1 · Deepgram, Gemini, recorder</div></div></div>
+      <div class="grow"><div class="who">Agent 2<small>Payments</small></div><div class="track"><div class="bar ws2" style="left:10%;width:50%">WS2 · Stripe, QR, kitchen feed</div></div></div>
+      <div class="grow"><div class="who">Agent 3<small>Screens</small></div><div class="track"><div class="bar ws3" style="left:10%;width:50%">WS3 · cashier, customer, kitchen</div></div></div>
+      <div class="grow"><div class="who">Agent 4<small>Owner &amp; data</small></div><div class="track"><div class="bar ws4" style="left:10%;width:60%">WS4 · DB, dashboard, report</div></div></div>
+      <div class="grow"><div class="who">You<small>human</small></div><div class="track">
+        <div class="bar ws5" style="left:0;width:15%">WS5 Vexo</div>
+        <div class="bar ws5" style="left:70%;width:15%">live tests</div>
+        <div class="bar ws5" style="left:85%;width:15%">rehearse</div>
+      </div></div>
+    </div>
+  </div>
+  <p class="phase-note">Agents 1–4 can't start until WS0 exists, because they all build against its order state, live updates and menu. Every outside service has a mock mode, so no agent waits on API keys or the bracelet.</p>
+
+  <div class="cards">
+    <article class="card ws0">
+      <div class="tag">Lead agent · WS0 + WS6</div>
+      <h3>Core and integration</h3>
+      <dl>
+        <div><dt>Builds</dt><dd><code>server.js</code>, <code>config.js</code>, <code>events.js</code>, <code>order.js</code>, <code>menu.js</code>, <code>menu.json</code>, placeholder routes and pages</dd></div>
+        <div><dt>Done when</dt><dd>The full live flow works with real keys, and the README and demo script are written.</dd></div>
+      </dl>
+    </article>
+    <article class="card ws1">
+      <div class="tag">Agent 1 · WS1</div>
+      <h3>Voice to order</h3>
+      <dl>
+        <div><dt>Builds</dt><dd><code>recorder.js</code>, <code>routes/voice.js</code>, <code>speech.js</code>, <code>gemini.js</code>, <code>readback.js</code></dd></div>
+        <div><dt>Done when</dt><dd>"Two large oat lattes and a croissant" builds the right order, and the read-back plays in under 3 seconds.</dd></div>
+      </dl>
+    </article>
+    <article class="card ws2">
+      <div class="tag">Agent 2 · WS2</div>
+      <h3>Payments</h3>
+      <dl>
+        <div><dt>Builds</dt><dd><code>stripe.js</code>, <code>routes/payment.js</code> (checkout, mock pay, kitchen feed)</dd></div>
+        <div><dt>Done when</dt><dd>Paying with the test card flips the order to Paid within about 3 seconds.</dd></div>
+      </dl>
+    </article>
+    <article class="card ws3">
+      <div class="tag">Agent 3 · WS3</div>
+      <h3>Screens</h3>
+      <dl>
+        <div><dt>Builds</dt><dd><code>cashier/</code>, <code>customer/</code>, <code>kitchen/</code>, <code>sse.js</code>, <code>format.js</code></dd></div>
+        <div><dt>Done when</dt><dd>The whole flow can be clicked through with every service mocked.</dd></div>
+      </dl>
+    </article>
+    <article class="card ws4">
+      <div class="tag">Agent 4 · WS4</div>
+      <h3>Owner and data</h3>
+      <dl>
+        <div><dt>Builds</dt><dd><code>db.js</code>, <code>seed.js</code>, <code>stats.js</code>, <code>report.js</code>, <code>email.js</code>, <code>ownerAssistant.js</code>, <code>routes/owner.js</code>, <code>owner/</code></dd></div>
+        <div><dt>Done when</dt><dd>The seeded dashboard looks right, the report email arrives, and "What sold best?" gets a correct spoken answer.</dd></div>
+      </dl>
+    </article>
+    <article class="card ws5">
+      <div class="tag">You · WS5</div>
+      <h3>Bracelet, keys, demo</h3>
+      <dl>
+        <div><dt>Does</dt><dd>Gets bracelet audio into the cashier page (Bluetooth mic first, then the Vexo SDK, then the laptop mic as fallback). Fills in <code>.env</code>. Rehearses the demo.</dd></div>
+        <div><dt>Done when</dt><dd>A judge can watch you order by voice and pay on their own phone.</dd></div>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h2>Where agents depend on each other</h2>
+  <p class="muted">Each cross-agent call is wrapped so the calling agent keeps working before the other side exists.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>From</th><th>Calls</th><th>To</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill ws1">Agent 1</span></td><td><code>startCheckout()</code></td><td><span class="pill ws2">Agent 2</span></td><td>The cashier says "confirm" and payment starts.</td></tr>
+        <tr><td><span class="pill ws2">Agent 2</span></td><td><code>db.saveOrder()</code></td><td><span class="pill ws4">Agent 4</span></td><td>A paid order is stored for stats.</td></tr>
+        <tr><td><span class="pill ws4">Agent 4</span></td><td><code>recorder.js</code>, <code>/api/tts</code></td><td><span class="pill ws1">Agent 1</span></td><td>The owner page reuses push-to-talk and the voice.</td></tr>
+        <tr><td><span class="pill ws3">Agent 3</span></td><td><code>/api/events</code>, <code>/api/voice</code></td><td><span class="pill ws0">Lead</span> <span class="pill ws1">Agent 1</span></td><td>The screens show live order state and send voice turns.</td></tr>
+        <tr><td>All agents</td><td><code>order.js</code>, <code>menu.js</code></td><td><span class="pill ws0">Lead</span></td><td>One shared order and menu.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>

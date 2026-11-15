@@ -1,0 +1,6 @@
+node_modules/
+.venv/
+.env
+data/*.db
+data/*.db-*
+vexo-open-kit/
