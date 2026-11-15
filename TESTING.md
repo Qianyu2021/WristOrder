@@ -230,10 +230,11 @@ Use mock payment and a temporary database if you want predictable starting stock
 | 12.2 | Cancel checkout or call `/api/checkout/mock-expire` in mock mode | The reservation releases; available count returns |
 | 12.3 | Repeat checkout and use mock payment | On-hand falls once, reserved returns to zero, and refresh keeps the new count |
 | 12.4 | Ask for more croissants than available | The order stays unchanged and the cashier hears an in-stock alternative; no substitution is made |
-| 12.5 | Open Popular items and Inventory from the Cashier shortcuts, Customer tabs, and Owner page | Paid items are ranked; all menu items and tracked ingredients appear with available counts and explicit In stock, Low, or Sold out labels; Owner shows seven-day sales and reorder amounts |
+| 12.5 | Open Popular items and Inventory from the Cashier shortcuts, Customer tabs, and Owner page | Paid items are ranked; made-to-order items, baked goods, and tracked ingredients appear with available counts and explicit In stock, Low, or Sold out labels; each pastry appears only once in the Inventory view |
 | 12.6 | Place and pay for a latte, then inspect Owner inventory; receive new stock | Espresso, milk, and cups decrease once on payment; milk appears as 1 L bottle equivalents; received bottles increase the saved count |
 | 12.7 | Sell 10 matcha lattes twice, checking Cashier, Kitchen, and Owner after each payment | Matcha falls from two 30 g tins to one, then zero; milk falls by 2 L each time; staff see a low-stock reminder and a suggested reorder; another matcha checkout is rejected until stock arrives |
 | 12.8 | Tap the Vexo band and say “received one tin of matcha, stop listening”; also try “restock five croissants” with Hold to talk | Stock increases once, the Cashier and Kitchen inventory views update, the laptop reads back the new amount, and the active customer order is unchanged |
+| 12.9 | On Cashier, open Inventory and use Add stock on a baked good or ingredient card | The saved quantity increases, the card and staff low-stock alert update, and Owner sees the same count |
 
 ---
 

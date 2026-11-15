@@ -29,6 +29,10 @@ function completePayment(pendingOrder = getOrder()) {
 export async function startCheckout() {
   if (checkoutInFlight) throw new Error('Checkout is already starting');
   const order = getOrder();
+  // Automatic order submission and an explicit Confirm click can race or be
+  // repeated. Reuse the existing payment session instead of starting a second
+  // checkout for the same order.
+  if (order.status === 'awaiting_payment') return order;
   if (order.status !== 'building') throw new Error('Order is not being built');
   if (!order.lines.length) throw new Error('Order is empty');
   checkoutInFlight = true;

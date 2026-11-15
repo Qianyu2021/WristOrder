@@ -133,8 +133,16 @@ test('demo payment and fulfillment remain consistent through SSE, retries, and r
   assert.match(ownerPage, /id="inventory"/);
   const subscription = await subscribe();
   const initial = await request('/api/order');
+  const emptyConfirm = await request('/api/conversation', { text: 'confirm the order' }, 400);
+  assert.match(emptyConfirm.error, /empty/i);
+  assert.equal((await request('/api/order')).status, 'building');
   await assertRejected(`/api/kitchen/${initial.id}/ready`);
   await assertRejected('/api/kitchen/ord_unknown/ready');
+  await request('/api/voice', { text: 'one latte' });
+  const cleared = await request('/api/order/clear', {});
+  assert.equal(cleared.status, 'building');
+  assert.deepEqual(cleared.lines, []);
+  assert.equal(cleared.total_cents, 0);
   const voice = await request('/api/voice', { text: 'two lattes and a croissant' });
   assert.ok(voice.order.lines.length >= 2);
   const checkout = await request('/api/checkout', {});
@@ -241,4 +249,26 @@ test('demo payment and fulfillment remain consistent through SSE, retries, and r
   const pastryStock = await request('/api/voice', { text: 'restock five croissants' });
   assert.equal(pastryStock.actions[0].name, 'receive_stock');
   assert.equal((await request('/api/inventory')).items.find(item => item.menu_id === 'croissant').on_hand, 12);
+
+  await request('/api/order/new', {});
+  const bandConfirm = await request('/api/voice', { text: 'one latte' });
+  assert.equal(bandConfirm.order.status, 'awaiting_payment');
+  assert.ok(bandConfirm.order.checkout.qr_data_url);
+  const repeatConfirm = await request('/api/conversation', { text: 'confirm order' });
+  assert.equal(repeatConfirm.order.checkout.session_id, bandConfirm.order.checkout.session_id);
+  await request('/api/checkout/mock-expire', {});
+
+  await request('/api/order/new', {});
+  const fullConversation = await request('/api/conversation', { text: 'one latte and confirm' });
+  assert.equal(fullConversation.order.status, 'awaiting_payment', 'full conversations still extract items before checkout');
+  await request('/api/checkout/mock-expire', {});
+
+  await request('/api/order/new', {});
+  const availableBeforeClear = (await request('/api/inventory')).ingredients.find(item => item.ingredient === 'milk_ml').available;
+  await request('/api/voice', { text: 'one latte' });
+  await request('/api/checkout', {});
+  const clearedCheckout = await request('/api/order/clear', {});
+  assert.equal(clearedCheckout.status, 'building');
+  assert.deepEqual(clearedCheckout.lines, []);
+  assert.equal((await request('/api/inventory')).ingredients.find(item => item.ingredient === 'milk_ml').available, availableBeforeClear);
 });

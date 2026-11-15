@@ -17,5 +17,5 @@ export function buildReadback(order, { clarifyQuestion, confirmed = false, error
   if (!order.lines.length) return 'Order is empty.';
   const items = upperFirst(join(order.lines.map(describeLine)));
   if (confirmed) return `Order confirmed. ${items}. Final total ${money(order.total_cents)}. Your receipt is ready. Please scan the code to pay.`;
-  return `${items}. Total ${money(order.total_cents)}. Say confirm to finish the order.`;
+  return `${items}. Total ${money(order.total_cents)}.`;
 }

@@ -83,6 +83,8 @@ const packagedIngredients = {
   oat_milk_ml: { label: 'Oat milk', package_size: 1000, package_unit: '1 L bottle' },
   matcha_g: { label: 'Matcha powder', package_size: 30, package_unit: '30 g tin' }
 };
+const ingredientLabels = { espresso_g: 'Espresso beans', chai_ml: 'Chai concentrate', tea_g: 'Tea leaves',
+  chocolate_g: 'Chocolate powder', cup: 'Disposable cups', bread_slice: 'Bread slices' };
 const insertIngredient = db.prepare('INSERT OR IGNORE INTO ingredient_stock (ingredient, on_hand, low_at, target) VALUES (?, ?, ?, ?)');
 for (const [ingredient, [target, lowAt]] of Object.entries(startingIngredients)) {
   insertIngredient.run(ingredient, target, lowAt, target);
@@ -171,7 +173,8 @@ export function inventorySnapshot() {
   const ingredients = ingredientRows.all().map(row => {
     const reserved = reservedIngredient.get(row.ingredient, null, null).amount;
     const available = row.on_hand - reserved;
-    return { ...row, ...(packagedIngredients[row.ingredient] || {}), unit: units[row.ingredient] || 'units', reserved, available,
+    return { ...row, label: ingredientLabels[row.ingredient] || undefined,
+      ...(packagedIngredients[row.ingredient] || {}), unit: units[row.ingredient] || 'units', reserved, available,
       low: available <= row.low_at, order_amount: available <= row.low_at ? Math.max(0, row.target - available) : 0 };
   });
   const itemStock = new Map(items.map(item => [item.menu_id, item]));

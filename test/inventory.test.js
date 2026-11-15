@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
-import { stockAmount, reorderAmount, stockStatus } from '../public/shared/inventory.js';
+import { stockAmount, reorderAmount, stockStatus, madeToOrderItems } from '../public/shared/inventory.js';
 
 test('pastry stock reserves, releases, and commits once with a paid order', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'wristorder-inventory-'));
@@ -25,6 +25,10 @@ test('pastry stock reserves, releases, and commits once with a paid order', asyn
     assert.deepEqual([menuItem('latte').available, menuItem('matcha_latte').available,
       menuItem('ham_cheese_sandwich').available, menuItem('avocado_toast').available], [25, 20, 20, 20]);
     assert.equal(stockStatus(menuItem('latte')), 'In stock');
+    const visibleNames = [...madeToOrderItems(inventorySnapshot()).map(item => item.name),
+      ...inventorySnapshot().items.map(item => item.name)];
+    assert.equal(visibleNames.filter(name => name === 'Croissant').length, 1);
+    assert.ok(visibleNames.includes('Ham & Cheese Sandwich'));
     assert.deepEqual(inventorySnapshot().ingredients.filter(item => ['milk_ml', 'oat_milk_ml', 'matcha_g'].includes(item.ingredient))
       .map(item => [item.ingredient, item.on_hand, item.package_size]),
       [['matcha_g', 60, 30], ['milk_ml', 5000, 1000], ['oat_milk_ml', 2000, 1000]]);
@@ -92,7 +96,7 @@ test('pastry stock reserves, releases, and commits once with a paid order', asyn
     assert.deepEqual([ingredient('espresso_g').on_hand, ingredient('espresso_g').reserved, ingredient('espresso_g').available], [18, 18, 0]);
     assert.equal(ingredient('milk_ml').reserved, 0, 'oat milk replaces dairy milk');
     assert.equal(ingredient('oat_milk_ml').reserved, 200);
-    assert.ok(inventorySnapshot().restock.some(item => item.name === 'espresso_g' && item.order_amount === 1800));
+    assert.ok(inventorySnapshot().restock.some(item => item.name === 'Espresso beans' && item.order_amount === 1800));
     assert.throws(() => reserveStock({ ...latte, id: 'ord_no_espresso' }), error => error.status === 409 && /espresso/i.test(error.message));
     releaseStock(latte.id);
     assert.equal(ingredient('espresso_g').available, 18);
@@ -106,7 +110,7 @@ test('pastry stock reserves, releases, and commits once with a paid order', asyn
     assert.throws(() => receiveStock('ingredient', 'missing', 1), error => error.status === 404);
     receiveStock('ingredient', 'espresso_g', 500);
     assert.equal(ingredient('espresso_g').on_hand, 500);
-    assert.ok(!inventorySnapshot().restock.some(item => item.name === 'espresso_g'));
+    assert.ok(!inventorySnapshot().restock.some(item => item.name === 'Espresso beans'));
 
     const matchaLine = { line_id: 1, menu_id: 'matcha_latte', name: 'Matcha Latte', qty: 10,
       modifiers: [], unit_price_cents: 500, line_total_cents: 5000 };

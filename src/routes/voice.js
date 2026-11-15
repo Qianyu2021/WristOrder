@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { parseOrderFallback, parseOrderTurn } from '../ai/gemini.js';
+import { containsNewOrderCommand, isStandaloneConfirmation, parseOrderFallback, parseOrderTurn } from '../ai/gemini.js';
 import { parseConversationOrder } from '../ai/conversation.js';
 import { buildReadback } from '../ai/readback.js';
 import { addItem, clearOrder, getOrder, newOrder, removeItem, setHeard, setReadback, updateItem } from '../order.js';
@@ -42,6 +42,16 @@ function finishReadback({ heard, actions = [], clarifyQuestion, confirmed = fals
   const readback = { text, audio_url: audioUrl(text) };
   broadcast('readback', readback);
   return { heard, actions, order: getOrder(), readback };
+}
+
+function startNewOrderTurn(heard) {
+  setHeard(heard);
+  try {
+    newOrder();
+    return { status: 200, body: finishReadback({ heard, actions: [{ name: 'new_order', args: {} }], message: 'Ready for a new order.' }) };
+  } catch (error) {
+    return { status: error.status || 400, body: failure(heard, error.message) };
+  }
 }
 
 function handleInventoryTurn(heard) {
@@ -88,6 +98,24 @@ function stockMessage(error) {
   return alternatives.length ? `${error.message}. Available instead: ${alternatives.join(' or ')}. Please confirm a replacement.` : error.message;
 }
 
+async function confirmCurrentOrder(heard) {
+  const current = getOrder();
+  setHeard(heard);
+  if (current.status === 'awaiting_payment') {
+    return { status: 200, body: finishReadback({ heard, message: 'Payment has already started. Scan the QR code to pay or cancel this checkout.' }) };
+  }
+  if (current.status !== 'building') return { status: 409, body: failure(heard, blockedMessage(current.status)) };
+  if (!current.lines.length) return { status: 400, body: failure(heard, 'Order is empty. Add an item before confirming.') };
+  try {
+    await startCheckout();
+    return { status: 200, body: finishReadback({ heard, actions: [{ name: 'confirm_order', args: {} }], confirmed: true }) };
+  } catch (error) {
+    console.error('Payment checkout could not start:', error.message);
+    const message = error.status === 409 ? stockMessage(error) : 'Payment could not start. Check the payment setup and try again.';
+    return { status: error.status || 502, body: failure(heard, message) };
+  }
+}
+
 router.post('/conversation', async (req, res) => {
   const heard = String(req.body?.text || '').trim();
   if (!heard) return res.status(400).json({ error: 'Conversation text is required' });
@@ -96,6 +124,14 @@ router.post('/conversation', async (req, res) => {
     const inventoryTurn = handleInventoryTurn(heard);
     if (inventoryTurn) return res.json(inventoryTurn);
   } catch (error) { return res.status(error.status || 500).json(failure(heard, error.message)); }
+  if (containsNewOrderCommand(heard)) {
+    const result = startNewOrderTurn(heard);
+    return res.status(result.status).json(result.body);
+  }
+  if (isStandaloneConfirmation(heard)) {
+    const result = await confirmCurrentOrder(heard);
+    return res.status(result.status).json(result.body);
+  }
   const initial = getOrder();
   if (initial.status !== 'building') return res.status(409).json(failure(heard, blockedMessage(initial.status)));
   setHeard(heard);
@@ -143,6 +179,14 @@ router.post('/voice', upload.single('audio'), async (req, res, next) => {
 
     const inventoryTurn = handleInventoryTurn(heard);
     if (inventoryTurn) return res.json(inventoryTurn);
+    if (containsNewOrderCommand(heard)) {
+      const result = startNewOrderTurn(heard);
+      return res.status(result.status).json(result.body);
+    }
+    if (isStandaloneConfirmation(heard)) {
+      const result = await confirmCurrentOrder(heard);
+      return res.status(result.status).json(result.body);
+    }
 
     setHeard(heard);
     let calls; const g0 = Date.now();
@@ -176,6 +220,18 @@ router.post('/voice', upload.single('audio'), async (req, res, next) => {
       }
     }
     if (!calls.length) clarifyQuestion = 'Sorry, I did not understand that order.';
+    // A complete single-turn order already contains the customer's intent, so
+    // start payment without requiring a second confirmation utterance. Keep
+    // clarification and non-order commands out of the automatic checkout path.
+    if (!clarifyQuestion && applied.some(call => ['add_item', 'remove_item', 'update_item'].includes(call.name)) && getOrder().lines.length) {
+      try {
+        await startCheckout();
+        confirmed = true;
+      } catch (error) {
+        console.error('Automatic checkout could not start:', error.message);
+        clarifyQuestion = error.status === 409 ? stockMessage(error) : 'The order is ready, but payment could not start. Check the payment setup and try again.';
+      }
+    }
     const body = finishReadback({ heard, actions: applied, clarifyQuestion, confirmed });
     console.log(`[timing] voice turn: stt ${sttMs}ms, gemini ${geminiMs}ms, total ${Date.now() - t0}ms (tts is fetched on demand via /api/tts)`);
     return res.json(body);

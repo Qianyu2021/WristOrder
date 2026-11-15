@@ -1,7 +1,7 @@
 import express from 'express';
 import { config, serviceModes } from './config.js';
 import { getMenu } from './menu.js';
-import { getOrder, newOrder, replaceItem } from './order.js';
+import { clearOrder, getOrder, newOrder, replaceItem } from './order.js';
 import { assertStockAvailable, inventorySnapshot, popularItems } from './db.js';
 import { sseHandler } from './events.js';
 import voiceRouter from './routes/voice.js';
@@ -23,6 +23,15 @@ app.get('/api/order', (_req, res) => res.json(getOrder()));
 app.post('/api/order/new', (_req, res) => {
   try { res.json(newOrder()); }
   catch (error) { res.status(409).json({ error: error.message }); }
+});
+app.post('/api/order/clear', async (_req, res) => {
+  try {
+    if (getOrder().status === 'awaiting_payment') {
+      await cancelCheckout();
+      return res.json(newOrder());
+    }
+    return res.json(clearOrder());
+  } catch (error) { return res.status(error.status || 409).json({ error: error.message }); }
 });
 app.post('/api/order/cancel', async (_req, res) => {
   try { res.json(await cancelCheckout()); }

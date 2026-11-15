@@ -14,6 +14,10 @@ export function reorderAmount(row) {
 }
 
 export const stockName = row => row.label || row.name?.replace(/_(ml|g)$/, '').replaceAll('_', ' ') || row.ingredient?.replace(/_(ml|g)$/, '').replaceAll('_', ' ');
+export const madeToOrderItems = snapshot => {
+  const stockedIds = new Set((snapshot?.items || []).map(item => item.menu_id));
+  return (snapshot?.menu_items || []).filter(item => !stockedIds.has(item.menu_id));
+};
 export const stockStatus = row => row.available === null || row.available === undefined ? 'Unknown'
   : row.available === 0 ? 'Sold out' : row.low || row.available <= row.low_at ? 'Low' : 'In stock';
 

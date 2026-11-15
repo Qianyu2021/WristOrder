@@ -2,12 +2,13 @@ import { subscribe } from '/shared/sse.js';
 import { money, lineLabel } from '/shared/format.js';
 import { createRecorder, listInputDevices } from '/shared/recorder.js';
 import { createVexo } from './vexo.js';
-import { stockAmount, stockName, stockStatus, renderStaffStockAlert } from '/shared/inventory.js';
+import { stockAmount, stockName, stockStatus, madeToOrderItems, renderStaffStockAlert } from '/shared/inventory.js';
 
 const $ = id => document.getElementById(id);
 const els = Object.fromEntries(['mic', 'micSource', 'ptt', 'level', 'textForm', 'text', 'heard', 'readback', 'status', 'lines', 'total', 'confirm', 'clear', 'cancel', 'new', 'pay', 'error', 'vexoConnect', 'vexoStatus', 'vexoStop', 'conversation', 'receipt', 'receiptNumber', 'receiptLines', 'receiptTotal', 'printReceipt', 'payment', 'paymentQr', 'paymentLink', 'menuItems', 'popularItems', 'inventoryItems', 'menuTab', 'popularTab', 'inventoryTab'].map(id => [id, $(id)]));
 const MIC_KEY = 'wristorder.mic';
 let order = null, recorder = null, meter = null, listening = false, starting = false, errTimer;
+let checkoutPending = false;
 let vexo = null, vexoState = 'disconnected';
 let conversationParts = [];
 let activeItemTab = 'menu';
@@ -15,7 +16,11 @@ let menu = [];
 let inventory = new Map();
 let ingredientInventory = [];
 let menuAvailability = [];
+let inventoryError = '';
+let inventoryNotice = '';
 const STOP_LISTENING = /\bstop[\s.,!?-]+listening\b/i;
+const NEW_ORDER_SPEECH = /\b(?:start(?: a)? new order|new order|next customer)\b/i;
+const CONFIRM_SPEECH = /^(?:(?:hey )?vexo |yes |okay |ok |please |i want to |i |can you |could you )*confirm(?:(?: (?:the|this|my))? order| it)?(?: now| please)?$/;
 
 const store = {
   get() { try { return localStorage.getItem(MIC_KEY) || ''; } catch { return ''; } },
@@ -61,8 +66,8 @@ function render(o) {
   if (o.last_heard) els.heard.textContent = o.last_heard;
   if (o.last_readback) els.readback.textContent = o.last_readback;
   const building = o.status === 'building';
-  els.confirm.disabled = !building || !o.lines.length;
-  els.clear.disabled = !building || !o.lines.length;
+  els.confirm.disabled = checkoutPending;
+  els.clear.disabled = !['building', 'awaiting_payment'].includes(o.status) || !o.lines.length;
   els.cancel.disabled = !['building', 'awaiting_payment'].includes(o.status);
   vexo?.updateOrderStatus(o.status);
 }
@@ -164,16 +169,29 @@ function renderInventory() {
   if (!inventory.size) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = 'Checking inventory…';
+    empty.textContent = inventoryError || 'Checking inventory…';
     els.inventoryItems.append(empty);
+    if (inventoryError) {
+      const retry = document.createElement('button');
+      retry.type = 'button'; retry.textContent = 'Retry inventory';
+      retry.addEventListener('click', () => { void loadInventory(); });
+      els.inventoryItems.append(retry);
+    }
     return;
   }
   const intro = document.createElement('p');
   intro.className = 'inventory-intro';
-  intro.textContent = 'Available stock updates as orders are reserved, paid, or cancelled. Menu counts use base recipes; modifiers can change ingredient needs.';
+  intro.textContent = inventoryError
+    ? `Could not refresh inventory: ${inventoryError}. Showing the last loaded counts.`
+    : 'Available stock updates as orders are reserved, paid, or cancelled. Add deliveries below or say a stock update to the band. Menu counts use base recipes; modifiers can change ingredient needs.';
   els.inventoryItems.append(intro);
+  const feedback = document.createElement('p');
+  feedback.id = 'inventoryFeedback'; feedback.className = 'inventory-feedback';
+  feedback.setAttribute('role', 'status');
+  feedback.textContent = inventoryNotice;
+  els.inventoryItems.append(feedback);
   const menuHeading = document.createElement('h3');
-  menuHeading.className = 'inventory-section'; menuHeading.textContent = 'Menu items available to sell';
+  menuHeading.className = 'inventory-section'; menuHeading.textContent = 'Made-to-order food and drinks';
   els.inventoryItems.append(menuHeading);
   for (const item of menuAvailability) {
     const card = document.createElement('article');
@@ -199,6 +217,7 @@ function renderInventory() {
     detail.textContent = `${item.on_hand} on hand · ${item.reserved} reserved`;
     const status = document.createElement('small'); status.className = 'inventory-status'; status.textContent = stockStatus(item);
     card.append(name, available, status, detail);
+    appendReceiveControl(card, { kind: 'item', id: item.menu_id, item });
     if (item.available === 0) {
       const alternative = [...inventory.values()].find(other => other.menu_id !== item.menu_id && other.available > 0);
       if (alternative) {
@@ -223,8 +242,39 @@ function renderInventory() {
     detail.textContent = `${stockAmount(item, item.on_hand)} on hand · ${stockAmount(item, item.reserved)} reserved`;
     const status = document.createElement('small'); status.className = 'inventory-status'; status.textContent = stockStatus(item);
     card.append(name, available, status, detail);
+    appendReceiveControl(card, { kind: 'ingredient', id: item.ingredient, item });
     els.inventoryItems.append(card);
   }
+}
+
+function appendReceiveControl(card, { kind, id, item }) {
+  const form = document.createElement('form');
+  form.className = 'inventory-receive';
+  const input = document.createElement('input');
+  input.type = 'number'; input.min = '1'; input.step = '1'; input.required = true;
+  input.setAttribute('aria-label', `Quantity of ${stockName(item)} received`);
+  const unit = document.createElement('small');
+  unit.textContent = item.package_unit ? `${item.package_unit}s` : item.unit || 'pcs';
+  const button = document.createElement('button');
+  button.type = 'submit'; button.textContent = 'Add stock';
+  form.append(input, unit, button);
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    button.disabled = true;
+    const count = Number(input.value);
+    try {
+      const snapshot = await postJson('/api/owner/inventory/receive', {
+        kind, id, amount: count * (item.package_size || 1)
+      });
+      inventoryNotice = `Added ${stockAmount(item, count * (item.package_size || 1))} of ${stockName(item)}.`;
+      updateInventory(snapshot);
+    } catch (error) {
+      inventoryNotice = error.message || 'Could not add stock. Please try again.';
+      renderInventory();
+      button.disabled = false;
+    }
+  });
+  card.append(form);
 }
 
 function setItemTab(tab) {
@@ -263,6 +313,11 @@ function handleVoiceResult(data) {
   if (!data) return;
   if (data.heard !== undefined) els.heard.textContent = data.heard || '(nothing heard)';
   if (data.order) render(data.order);
+  if (data.actions?.some(action => action.name === 'new_order')) {
+    els.heard.textContent = '—';
+    els.readback.textContent = '—';
+    els.conversation.textContent = '—';
+  }
   if (data.inventory) updateInventory(data.inventory);
   if (data.readback?.text) els.readback.textContent = data.readback.text;
   playReadback(data.readback);
@@ -284,7 +339,8 @@ async function transcribeConversationSegment(blob) {
   els.heard.textContent = heard;
   // Do not await this from the segment uploader: stopping flushes that same
   // upload queue, so waiting here would make the queue wait for itself.
-  if (STOP_LISTENING.test(conversation)) void vexo.stopRecording();
+  const spokenCommand = conversation.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (STOP_LISTENING.test(conversation) || NEW_ORDER_SPEECH.test(spokenCommand) || CONFIRM_SPEECH.test(spokenCommand)) void vexo.stopRecording();
 }
 
 async function finishConversation() {
@@ -299,7 +355,13 @@ async function finishConversation() {
 }
 
 async function confirmOrder({ announce = false } = {}) {
-  if (!order || order.status !== 'building' || !order.lines.length) throw new Error('Add at least one item before confirming.');
+  if (!order) throw new Error('The order is still loading. Please try again.');
+  if (order.status === 'awaiting_payment') {
+    els.payment.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    throw new Error('Payment has already started. Scan the QR code or cancel this checkout.');
+  }
+  if (order.status !== 'building') throw new Error('Start a new order before confirming.');
+  if (!order.lines.length) throw new Error('Add at least one item before confirming.');
   if (announce) {
     handleVoiceResult(await postJson('/api/voice', { text: 'confirm' }));
     return;
@@ -388,9 +450,23 @@ els.textForm.addEventListener('submit', e => {
   els.text.value = '';
   clearError(); sendText(text);
 });
-els.confirm.addEventListener('click', async () => { clearError(); try { await confirmOrder(); } catch {} });
+els.confirm.addEventListener('click', async () => {
+  if (checkoutPending) return;
+  clearError(); checkoutPending = true; els.confirm.disabled = true;
+  try { await confirmOrder(); }
+  catch (error) { showError(error.message || 'Could not start payment. Please try again.'); }
+  finally { checkoutPending = false; els.confirm.disabled = false; }
+});
 els.new.addEventListener('click', async () => { clearError(); try { render(await post('/api/order/new')); els.heard.textContent = '—'; els.readback.textContent = '—'; } catch {} });
-els.clear.addEventListener('click', () => { clearError(); sendText('clear'); });
+els.clear.addEventListener('click', async () => {
+  clearError();
+  try {
+    render(await post('/api/order/clear'));
+    els.heard.textContent = '—';
+    els.readback.textContent = 'Order cleared.';
+    els.conversation.textContent = '—';
+  } catch {}
+});
 els.cancel.addEventListener('click', async () => {
   if (!confirm('Cancel this order?')) return;
   clearError();
@@ -402,7 +478,7 @@ els.menuTab.addEventListener('click', () => setItemTab('menu'));
 els.popularTab.addEventListener('click', () => setItemTab('popular'));
 els.inventoryTab.addEventListener('click', () => setItemTab('inventory'));
 document.querySelector('#showPopular').addEventListener('click', () => { setItemTab('popular'); document.querySelector('#menu').scrollIntoView({ behavior: 'smooth' }); });
-document.querySelector('#showInventory').addEventListener('click', () => { setItemTab('inventory'); document.querySelector('#menu').scrollIntoView({ behavior: 'smooth' }); });
+document.querySelector('#showInventory').addEventListener('click', () => { setItemTab('inventory'); void loadInventory(); document.querySelector('#menu').scrollIntoView({ behavior: 'smooth' }); });
 
 // Vexo owns its own Bluetooth audio path. Keep the laptop microphone as a separate fallback.
 vexo = createVexo({
@@ -446,12 +522,20 @@ els.mic.addEventListener('change', () => store.set(els.mic.value));
 const readyNotifications = new Set();
 function updateInventory(snapshot) {
   if (!Array.isArray(snapshot?.items)) return;
+  inventoryError = '';
   inventory = new Map(snapshot.items.map(item => [item.menu_id, item]));
   ingredientInventory = snapshot.ingredients || [];
-  menuAvailability = snapshot.menu_items || [];
+  menuAvailability = madeToOrderItems(snapshot);
   renderStaffStockAlert(document.querySelector('#staffStockAlert'), snapshot);
   if (menu.length) renderMenu({ items: menu });
   if (activeItemTab === 'inventory') renderInventory();
+}
+async function loadInventory() {
+  try { updateInventory(await request('/api/inventory', { cache: 'no-store' })); }
+  catch (error) {
+    inventoryError = error.message === 'network' ? 'Inventory is unavailable. Check the server and retry.' : error.message || 'Could not load inventory.';
+    if (activeItemTab === 'inventory') renderInventory();
+  }
 }
 subscribe({
   order: render,
@@ -471,5 +555,5 @@ subscribe({
 request('/api/health').then(h => { els.pay.hidden = h.stripe !== 'mock'; }).catch(() => {});
 request('/api/order').then(render).catch(() => {});
 request('/api/menu').then(renderMenu).catch(() => {});
-request('/api/inventory').then(updateInventory).catch(() => {});
+void loadInventory();
 loadMics();

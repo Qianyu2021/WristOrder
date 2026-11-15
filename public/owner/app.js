@@ -1,7 +1,7 @@
 import { money } from '/shared/format.js';
 import { createRecorder } from '/shared/recorder.js';
 import { subscribe } from '/shared/sse.js';
-import { stockAmount, reorderAmount, stockName, stockStatus } from '/shared/inventory.js';
+import { stockAmount, reorderAmount, stockName, stockStatus, madeToOrderItems } from '/shared/inventory.js';
 
 let dailyChart; let itemsChart; let currentReport;
 const kpis = document.querySelector('#kpis');
@@ -40,7 +40,7 @@ function renderPopularItems(items) {
 
 function renderOwnerInventory(snapshot) {
   menuInventoryBody.replaceChildren();
-  for (const item of snapshot?.menu_items || []) {
+  for (const item of madeToOrderItems(snapshot)) {
     const row = document.createElement('tr');
     if (item.low) row.className = 'inventory-low';
     for (const [index, value] of [item.name, item.category, item.available === null ? 'Unknown' : String(item.available), stockStatus(item)].entries()) {

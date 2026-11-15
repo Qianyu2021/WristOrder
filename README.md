@@ -25,9 +25,9 @@ The app creates its SQLite database locally. To populate the owner dashboard wit
 
 Open the [Cashier](http://localhost:3000/cashier), [Customer](http://localhost:3000/customer), [Kitchen](http://localhost:3000/kitchen), and [Pickup](http://localhost:3000/pickup) views in separate tabs or on separate screens.
 
-1. On **Cashier**, type an order such as `two lattes and a croissant` and press **Send**. Review the items, modifiers, total, and readback. Use **Replace** on a line if needed; **Clear** empties the current order. You can print the receipt or cancel an unpaid order.
+1. On **Cashier**, type an order such as `two lattes and a croissant` and press **Send**. Once the order is understood, checkout starts automatically. Review the items, modifiers, total, and readback. Use **Replace** on a line if needed before sending; **Clear** empties the current order. You can print the receipt or cancel an unpaid order.
 2. Watch **Customer** update with the order. Its **Popular items** and **Inventory** tabs show sales favorites and current availability.
-3. Press **Confirm** on Cashier. The customer and cashier screens show a payment QR code. With blank Stripe credentials, scan the QR code and press **Pay (test)** on the phone page, or press **Simulate payment** on Cashier. No real payment is made in mock mode.
+3. The customer and cashier screens show a payment QR code automatically. With blank Stripe credentials, scan the QR code and press **Pay (test)** on the phone page, or press **Simulate payment** on Cashier. No real payment is made in mock mode.
 4. Once paid, the ticket appears on **Kitchen**. Press **Mark ready**. The order number moves to the ready section on **Pickup**, and Cashier receives a notification.
 5. Open [Owner](http://localhost:3000/owner) to see the saved sale, popular items, and updated stock. Press **New order** on Cashier for the next customer.
 
@@ -41,9 +41,9 @@ You can open [Live café](http://localhost:3000/demo) for a presentation view of
 | Laptop microphone | Hold **Hold to talk** or the Space key while speaking, then release. Allow microphone access in the browser. Live transcription needs a Deepgram key. In mock mode, every recording returns the fixed sample phrase `two lattes and a croissant`. |
 | Vexo band | In Chrome or Edge, connect the band on Cashier and tap it to start a conversation. Say **“stop listening”** when finished. The app transcribes the conversation and builds the final agreed order, then starts checkout. |
 
-For a stock delivery, say or type one update at a time, such as `received one tin of matcha` or `restock five croissants`. The app asks for clarification if the quantity or unit is unclear. The **Owner → Inventory & reorder** table also has **Receive** controls for recording deliveries; milk and matcha are received in whole bottles and tins.
+For a stock delivery, say or type one update at a time, such as `received one tin of matcha` or `restock five croissants`. The app asks for clarification if the quantity or unit is unclear. The **Cashier → Inventory** cards and **Owner → Inventory & reorder** table also have controls for recording deliveries; milk and matcha are received in whole bottles and tins.
 
-The Cashier, Customer, and Owner inventory views show what can currently be made, including drinks and food. Menu counts use base recipes; modifiers can change the ingredients required. Checkout reserves stock, verified payment deducts it once, and cancellation or confirmed expiry releases it. Cashier and Kitchen show low-stock reminders.
+The Cashier, Customer, and Owner inventory views show what can currently be made, including drinks and food. Each stocked item appears once: made-to-order food and drinks show recipe-based counts, while baked goods and ingredients show physical stock. Menu counts use base recipes; modifiers can change the ingredients required. Checkout reserves stock, verified payment deducts it once, and cancellation or confirmed expiry releases it. Cashier and Kitchen show low-stock reminders.
 
 ## Owner tools
 

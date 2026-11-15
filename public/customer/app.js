@@ -1,6 +1,6 @@
 import { subscribe } from '/shared/sse.js';
 import { money } from '/shared/format.js';
-import { stockAmount, stockName, stockStatus } from '/shared/inventory.js';
+import { stockAmount, stockName, stockStatus, madeToOrderItems } from '/shared/inventory.js';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -34,7 +34,7 @@ function fullInventoryHtml() {
     const status = stockStatus(item);
     return `<article class="stock-card${status === 'Sold out' ? ' sold-out' : status === 'Low' ? ' low-stock' : ''}"><strong>${esc(stockName(item))}</strong><span>${esc(stockAmount(item, item.available))} available</span><small class="stock-status">${status}</small></article>`;
   }).join('');
-  return `<section class="stock-list"><h2>Menu items available to sell</h2><div class="stock-grid">${menuCards}</div><h2>Food and ingredient stock</h2><div class="stock-grid">${stockCards}</div></section>`;
+  return `<section class="stock-list"><h2>Made-to-order food and drinks</h2><div class="stock-grid">${menuCards}</div><h2>Baked goods and ingredients</h2><div class="stock-grid">${stockCards}</div></section>`;
 }
 function renderInventoryStatus() {
   const section = document.getElementById('inventory-status');
@@ -44,7 +44,7 @@ function updateInventory(snapshot) {
   if (!Array.isArray(snapshot?.items)) return;
   inventoryItems = snapshot.items;
   ingredientInventory = snapshot.ingredients || [];
-  menuInventory = snapshot.menu_items || [];
+  menuInventory = madeToOrderItems(snapshot);
   if (activeTab === 'order') renderCurrent?.();
   else if (activeTab === 'inventory') renderInventoryPage();
 }

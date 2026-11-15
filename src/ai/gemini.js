@@ -3,6 +3,17 @@ import { findItem, findModifier, getMenu } from '../menu.js';
 
 const normalize = text => String(text).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 const isConfirmation = text => /\b(?:i\s+)?confirm\b|\bthat s (?:it|all)\b|\bring it up\b|\bcheck out\b|^pay$/.test(normalize(text));
+export function isStandaloneConfirmation(text) {
+  const phrase = normalize(text).replace(/^(?:(?:(?:hey )?vexo|yes|okay|ok|please|i want to|i|can you|could you)\s+)+/, '');
+  return /^(?:confirm(?: (?:(?:the|this|my) )?order| it)?(?: now| please)?|that s (?:it|all)|ring it up|check out|checkout|pay(?: now)?)$/.test(phrase);
+}
+export function isStandaloneNewOrder(text) {
+  const phrase = normalize(text).replace(/^(?:(?:(?:hey )?vexo|yes|okay|ok|please|i want to|i|can you|could you)\s+)+/, '');
+  return /^(?:start (?:a )?new order|new order|next customer)$/.test(phrase);
+}
+export function containsNewOrderCommand(text) {
+  return /(?:^|\b)(?:start (?:a )?new order|new order|next customer)(?:$|\b)/.test(normalize(text));
+}
 const quantities = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
 const knownNames = new Set(['add_item', 'remove_item', 'update_item', 'clear_order', 'confirm_order', 'cancel_order', 'new_order', 'clarify']);
 
